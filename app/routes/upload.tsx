@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router';
 import { convertPdfToImage } from '~/lib/pdf2img';
 import { generateUUID } from '~/lib/utils';
 import { prepareInstructions } from '~/constants';
+import type { ResumeAnalyzeType } from '~/types/resume';
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -15,7 +16,7 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 
-interface FormDataType {
+interface FormUploadType {
   companyName: string;
   jobTitle: string;
   jobDescription: string;
@@ -38,7 +39,7 @@ const Upload = () => {
     jobTitle,
     jobDescription,
     file,
-  }: FormDataType) => {
+  }: FormUploadType) => {
     setIsProcessing(true);
 
     setStatusText('Uploading the file...');
@@ -56,14 +57,14 @@ const Upload = () => {
 
     setStatusText('Preparing data...');
     const uuid = generateUUID();
-    const data = {
+    const data: ResumeAnalyzeType = {
       id: uuid,
       resumePath: uploadedFile.path,
       imagePath: uploadedImage.path,
       companyName,
       jobTitle,
       jobDescription,
-      feedback: '',
+      feedback: null,
     };
     await kv.set(`resume:${uuid}`, JSON.stringify(data));
 
@@ -82,7 +83,8 @@ const Upload = () => {
     data.feedback = JSON.parse(feedbackText);
     await kv.set(`resume:${uuid}`, JSON.stringify(data));
     setStatusText('Analysis complete, redirecting...');
-    console.log(data);
+
+    navigate(`/resume/${uuid}`);
   };
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
@@ -108,7 +110,9 @@ const Upload = () => {
           <h1>Smart feedback for your dream job</h1>
           {isProcessing ? (
             <>
-              <h2>{statusText}</h2>
+              <h2 key={statusText} className='animate-fade-in'>
+                {statusText}
+              </h2>
               <img src='/images/resume-scan.gif' className='w-full' />
             </>
           ) : (

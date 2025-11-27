@@ -7,24 +7,28 @@ interface FileUploaderProps {
 }
 
 const FileUploader: FC<FileUploaderProps> = ({ onFileSelect }) => {
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
   const onDrop = useCallback(
     (acceptedFile: File[]) => {
       const file = acceptedFile[0] || null;
-
+      setSelectedFile(file);
       onFileSelect?.(file);
     },
     [onFileSelect],
   );
 
-  const { getRootProps, getInputProps, isDragActive, acceptedFiles } =
-    useDropzone({
-      onDrop,
-      multiple: false,
-      accept: { 'application/pdf': ['.pdf'] },
-      maxSize: 20 * 1024 * 1024,
-    });
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    multiple: false,
+    accept: { 'application/pdf': ['.pdf'] },
+    maxSize: 20 * 1024 * 1024,
+  });
 
-  const file = acceptedFiles[0] || null;
+  const handleRemove = () => {
+    setSelectedFile(null);
+    onFileSelect?.(null);
+  };
 
   return (
     <div className='w-full gradient-border'>
@@ -32,34 +36,36 @@ const FileUploader: FC<FileUploaderProps> = ({ onFileSelect }) => {
         <input {...getInputProps()} />
 
         <div className='space-y-4 cursor-pointer'>
-          {file ? (
+          {selectedFile ? (
             <div
-              className='uploader-selected-file'
+              className='uploader-selected-file animate-scale-in'
               onClick={(e) => e.stopPropagation()}
             >
               <img src='/images/pdf.png' alt='pdf' className='size-10' />
               <div className='flex items-center space-x-3'>
                 <div className='text-center'>
                   <p className='text-lg text-gray-700 font-medium truncate max-w-xs'>
-                    {file.name}
+                    {selectedFile.name}
                   </p>
                   <p className='text-sm text-gray-500'>
-                    {formatSize(file.size)}
+                    {formatSize(selectedFile.size)}
                   </p>
                 </div>
               </div>
 
               <button
-                className='p-2 cursor-pointer'
-                onClick={(_) => {
-                  onFileSelect?.(null);
+                className='p-2 cursor-pointer hover:bg-gray-100 rounded-lg transition-colors'
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleRemove();
                 }}
+                type='button'
               >
                 <img src='/icons/cross.svg' alt='remove' className='size-4' />
               </button>
             </div>
           ) : (
-            <div className='p-5 bg-white rounded-2xl flex flex-col items-center justify-center gap-7 sm:min-h-60'>
+            <div className='p-5 bg-white rounded-2xl flex flex-col items-center justify-center gap-7 sm:min-h-60 animate-fade-in-scale'>
               <div className='size-16 sm:size-20'>
                 <img
                   src='/icons/info.svg'
