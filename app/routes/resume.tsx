@@ -5,6 +5,10 @@ import { Link } from 'react-router';
 import { usePuterStore } from '~/lib/puter';
 import { useNavigate } from 'react-router';
 import type { ResumeAnalyzeType } from '~/types/resume';
+import Summary from '~/components/resume/summary';
+import ATS from '~/components/resume/ats';
+import Details from '~/components/resume/details';
+import type { w } from 'node_modules/react-router/dist/development/index-react-server-client-Da3kmxNd';
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -78,7 +82,14 @@ const Resume: FC = () => {
         <section className='feedback-section'>
           <h2 className='text-4xl text-black! font-bold'>Resume Review</h2>
           {feedback ? (
-            <div className='flex flex-col gap-8 animate-in fade-in duration-100'></div>
+            <div className='flex flex-col gap-8 animate-in fade-in duration-100'>
+              <Summary feedback={feedback} />
+              <ATS
+                score={feedback.ATS.score || 0}
+                suggestions={feedback.ATS.tips || []}
+              />
+              <Details feedback={feedback} />
+            </div>
           ) : (
             <img src='/images/resume-scan-2.gif' className='w-full' />
           )}
