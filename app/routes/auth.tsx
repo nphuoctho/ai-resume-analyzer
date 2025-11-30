@@ -31,7 +31,7 @@ const Auth = () => {
               </>
             )}
           </div>
-          <div>
+          <div className='text-center'>
             {isLoading ? (
               <button className='auth-button animate-pulse'>
                 <p>Sigign you in...</p>

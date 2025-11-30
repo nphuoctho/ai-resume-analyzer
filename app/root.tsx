@@ -26,6 +26,31 @@ export const links: Route.LinksFunction = () => [
   },
 ];
 
+export const meta: Route.MetaFunction = () => [
+  { title: 'Resumind - AI Resume Analyzer' },
+  {
+    name: 'description',
+    content:
+      'Smart feedback for your dream job! Track your applications & resume ratings with AI-powered ATS score analysis.',
+  },
+  { property: 'og:title', content: 'Resumind - AI Resume Analyzer' },
+  {
+    property: 'og:description',
+    content:
+      'Smart feedback for your dream job! Track your applications & resume ratings with AI-powered ATS score analysis.',
+  },
+  { property: 'og:image', content: '/images/thumbnail.jpg' },
+  { property: 'og:type', content: 'website' },
+  { name: 'twitter:card', content: 'summary_large_image' },
+  { name: 'twitter:title', content: 'Resumind - AI Resume Analyzer' },
+  {
+    name: 'twitter:description',
+    content:
+      'Smart feedback for your dream job! Track your applications & resume ratings.',
+  },
+  { name: 'twitter:image', content: '/images/thumbnail.jpg' },
+];
+
 export function Layout({ children }: { children: React.ReactNode }) {
   const { init } = usePuterStore();
 
