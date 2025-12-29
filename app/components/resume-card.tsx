@@ -47,7 +47,7 @@ const ResumeCard: FC<ResumeCardProps> = ({
         </div>
 
         <div className='shrink-0'>
-          <ScoreCircle score={feedback.overallScore} />
+          <ScoreCircle score={feedback?.overallScore || 0} />
         </div>
       </div>
       {resumeUrl && (
@@ -56,7 +56,7 @@ const ResumeCard: FC<ResumeCardProps> = ({
             <img
               src={resumeUrl}
               alt='resume'
-              className='w-full h-[350px] max-sm:h-[200px] object-cover object-top'
+              className='w-full h-87.5 max-sm:h-50 object-cover object-top'
             />
           </div>
         </div>
