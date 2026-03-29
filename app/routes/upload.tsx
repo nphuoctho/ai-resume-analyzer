@@ -1,174 +1,151 @@
-import { useState, type FormEvent } from 'react';
-import Navbar from '~/components/nav-bar';
-import type { Route } from './+types/upload';
-import FileUploader from '~/components/file-uploader';
-import { usePuterStore } from '~/lib/puter';
+import { type FormEvent, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { convertPdfToImage } from '~/lib/pdf2img';
-import { generateUUID } from '~/lib/utils';
+import FileUploader from '~/components/file-uploader';
+import Navbar from '~/components/nav-bar';
 import { prepareInstructions } from '~/constants';
+import { convertPdfToImage } from '~/lib/pdf2img';
+import { usePuterStore } from '~/lib/puter.store';
+import { generateUUID } from '~/lib/utils';
 import type { ResumeAnalyzeType } from '~/types/resume';
+import type { Route } from './+types/upload';
 
 export function meta({}: Route.MetaArgs) {
-  return [
-    { title: 'Upload Resumind' },
-    { name: 'description', content: 'Analysis your CV' },
-  ];
+	return [{ title: 'Upload Resumind' }, { name: 'description', content: 'Analysis your CV' }];
 }
 
 interface FormUploadType {
-  companyName: string;
-  jobTitle: string;
-  jobDescription: string;
-  file: File;
+	companyName: string;
+	jobTitle: string;
+	jobDescription: string;
+	file: File;
 }
 
 const Upload = () => {
-  const { auth, isLoading, fs, ai, kv } = usePuterStore();
-  const [isProcessing, setIsProcessing] = useState<boolean>(false);
-  const [statusText, setStatusText] = useState<string>('');
-  const [file, setFile] = useState<File | null>(null);
-  const navigate = useNavigate();
+	const { auth, isLoading, fs, ai, kv } = usePuterStore();
+	const [isProcessing, setIsProcessing] = useState<boolean>(false);
+	const [statusText, setStatusText] = useState<string>('');
+	const [file, setFile] = useState<File | null>(null);
+	const navigate = useNavigate();
 
-  const handleFileSelect = (file: File | null) => {
-    setFile(file);
-  };
+	const handleFileSelect = (file: File | null) => {
+		setFile(file);
+	};
 
-  const handleAnalyze = async ({
-    companyName,
-    jobTitle,
-    jobDescription,
-    file,
-  }: FormUploadType) => {
-    setIsProcessing(true);
+	const handleAnalyze = async ({ companyName, jobTitle, jobDescription, file }: FormUploadType) => {
+		setIsProcessing(true);
 
-    setStatusText('Uploading the file...');
-    const uploadedFile = await fs.upload([file]);
-    if (!uploadedFile) return setStatusText('Error: Failed to upload file');
+		setStatusText('Uploading the file...');
+		const uploadedFile = await fs.upload([file]);
+		if (!uploadedFile) return setStatusText('Error: Failed to upload file');
 
-    setStatusText('Converting to image...');
-    const imageFile = await convertPdfToImage(file);
-    if (!imageFile.file)
-      return setStatusText('Error: Failed to convert PDF to image');
+		setStatusText('Converting to image...');
+		const imageFile = await convertPdfToImage(file);
+		if (!imageFile.file) return setStatusText('Error: Failed to convert PDF to image');
 
-    setStatusText('Uploading the image...');
-    const uploadedImage = await fs.upload([imageFile.file]);
-    if (!uploadedImage) return setStatusText('Error: Failed to upload image');
+		setStatusText('Uploading the image...');
+		const uploadedImage = await fs.upload([imageFile.file]);
+		if (!uploadedImage) return setStatusText('Error: Failed to upload image');
 
-    setStatusText('Preparing data...');
-    const uuid = generateUUID();
-    const data: ResumeAnalyzeType = {
-      id: uuid,
-      resumePath: uploadedFile.path,
-      imagePath: uploadedImage.path,
-      companyName,
-      jobTitle,
-      jobDescription,
-      feedback: null,
-    };
-    await kv.set(`resume:${uuid}`, JSON.stringify(data));
+		setStatusText('Preparing data...');
+		const uuid = generateUUID();
+		const data: ResumeAnalyzeType = {
+			id: uuid,
+			resumePath: uploadedFile.path,
+			imagePath: uploadedImage.path,
+			companyName,
+			jobTitle,
+			jobDescription,
+			feedback: null
+		};
+		await kv.set(`resume:${uuid}`, JSON.stringify(data));
 
-    setStatusText('Analyzing...');
-    const feedback = await ai.feedback(
-      uploadedFile.path,
-      prepareInstructions({ jobTitle, jobDescription }),
-    );
-    if (!feedback) return setStatusText('Error: Failed to analyze rezume');
+		setStatusText('Analyzing...');
+		const feedback = await ai.feedback(
+			uploadedFile.path,
+			prepareInstructions({ jobTitle, jobDescription })
+		);
+		if (!feedback) return setStatusText('Error: Failed to analyze rezume');
 
-    const feedbackText =
-      typeof feedback?.message.content === 'string'
-        ? feedback.message.content
-        : feedback.message.content[0].text;
+		const feedbackText =
+			typeof feedback?.message.content === 'string'
+				? feedback.message.content
+				: feedback.message.content[0].text;
 
-    data.feedback = JSON.parse(feedbackText);
-    await kv.set(`resume:${uuid}`, JSON.stringify(data));
-    setStatusText('Analysis complete, redirecting...');
+		data.feedback = JSON.parse(feedbackText);
+		await kv.set(`resume:${uuid}`, JSON.stringify(data));
+		setStatusText('Analysis complete, redirecting...');
 
-    navigate(`/resume/${uuid}`);
-  };
+		navigate(`/resume/${uuid}`);
+	};
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const form = e.currentTarget.closest('form');
-    if (!form) return;
-    const formData = new FormData(form);
+	const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+		e.preventDefault();
+		const form = e.currentTarget.closest('form');
+		if (!form) return;
+		const formData = new FormData(form);
 
-    const companyName = formData.get('company-name') as string;
-    const jobTitle = formData.get('job-title') as string;
-    const jobDescription = formData.get('job-description') as string;
+		const companyName = formData.get('company-name') as string;
+		const jobTitle = formData.get('job-title') as string;
+		const jobDescription = formData.get('job-description') as string;
 
-    if (!file) return;
-    handleAnalyze({ companyName, jobTitle, jobDescription, file });
-  };
+		if (!file) return;
+		handleAnalyze({ companyName, jobTitle, jobDescription, file });
+	};
 
-  return (
-    <main className="bg-[url('/images/bg-main.svg')] bg-cover">
-      <Navbar />
+	return (
+		<main className="bg-[url('/images/bg-main.svg')] bg-cover">
+			<Navbar />
 
-      <section className='main-section'>
-        <div className='page-heading py-16'>
-          <h1>Smart feedback for your dream job</h1>
-          {isProcessing ? (
-            <>
-              <h2 key={statusText} className='animate-fade-in'>
-                {statusText}
-              </h2>
-              <img src='/images/resume-scan.gif' className='w-full' />
-            </>
-          ) : (
-            <h2>Drop your resume for an ATS score and improvement tips.</h2>
-          )}
-        </div>
+			<section className='main-section'>
+				<div className='page-heading py-16'>
+					<h1>Smart feedback for your dream job</h1>
+					{isProcessing ? (
+						<>
+							<h2 key={statusText} className='animate-fade-in'>
+								{statusText}
+							</h2>
+							<img src='/images/resume-scan.gif' className='w-full' />
+						</>
+					) : (
+						<h2>Drop your resume for an ATS score and improvement tips.</h2>
+					)}
+				</div>
 
-        {!isProcessing && (
-          <form
-            id='upload-form'
-            onSubmit={handleSubmit}
-            className='max-w-6xl flex flex-col gap-4'
-          >
-            <div className='form-div'>
-              <label htmlFor='company-name'>Company Name</label>
-              <input
-                type='text'
-                name='company-name'
-                placeholder='Company Name'
-                id='company-name'
-              />
-            </div>
+				{!isProcessing && (
+					<form id='upload-form' onSubmit={handleSubmit} className='max-w-6xl flex flex-col gap-4'>
+						<div className='form-div'>
+							<label htmlFor='company-name'>Company Name</label>
+							<input type='text' name='company-name' placeholder='Company Name' id='company-name' />
+						</div>
 
-            <div className='form-div'>
-              <label htmlFor='job-title'>Job Title</label>
-              <input
-                type='text'
-                name='job-title'
-                placeholder='Job Title'
-                id='job-title'
-              />
-            </div>
+						<div className='form-div'>
+							<label htmlFor='job-title'>Job Title</label>
+							<input type='text' name='job-title' placeholder='Job Title' id='job-title' />
+						</div>
 
-            <div className='form-div'>
-              <label htmlFor='job-description'>Job Description</label>
-              <textarea
-                rows={5}
-                name='job-description'
-                placeholder='Job Description'
-                id='job-description'
-              />
-            </div>
+						<div className='form-div'>
+							<label htmlFor='job-description'>Job Description</label>
+							<textarea
+								rows={5}
+								name='job-description'
+								placeholder='Job Description'
+								id='job-description'
+							/>
+						</div>
 
-            <div className='form-div'>
-              <label htmlFor='uploader'>Upload Resume</label>
-              <FileUploader onFileSelect={handleFileSelect} />
-            </div>
+						<div className='form-div'>
+							<label htmlFor='uploader'>Upload Resume</label>
+							<FileUploader onFileSelect={handleFileSelect} />
+						</div>
 
-            <button type='submit' className='primary-button'>
-              Analyze Resume
-            </button>
-          </form>
-        )}
-      </section>
-    </main>
-  );
+						<button type='submit' className='primary-button'>
+							Analyze Resume
+						</button>
+					</form>
+				)}
+			</section>
+		</main>
+	);
 };
 
 export default Upload;
